@@ -6,6 +6,7 @@ final class DeviceCards {
     private var cards: [String: DeviceCard] = [:]
     private var orderedIDs: [String] = []
     private let empty = NSTextField(wrappingLabelWithString: "No Magic accessories detected.\nConnect a Magic Keyboard or Magic Mouse to get started.")
+    private let emptyArtwork = NSStackView()
     private let collectionNotice = NSTextField(wrappingLabelWithString: "")
     private var lastCollectionMessage: String?
     private let onMuteChange: (String, Bool) -> Void
@@ -21,11 +22,24 @@ final class DeviceCards {
         self.announce = announce
         self.onMuteChange = onMuteChange
         self.isActive = isActive
-        view.orientation = .vertical; view.alignment = .leading; view.spacing = 10
+        view.orientation = .vertical; view.alignment = .leading; view.spacing = 14
         empty.font = .preferredFont(forTextStyle: .body); empty.textColor = .secondaryLabelColor
         collectionNotice.font = .preferredFont(forTextStyle: .body); collectionNotice.isHidden = true
         view.addArrangedSubview(collectionNotice)
         collectionNotice.widthAnchor.constraint(equalTo: view.widthAnchor).isActive = true
+        emptyArtwork.orientation = .horizontal; emptyArtwork.alignment = .centerY; emptyArtwork.spacing = 16
+        emptyArtwork.setAccessibilityElement(false); emptyArtwork.setAccessibilityHidden(true)
+        for symbol in ["keyboard", "magicmouse"] {
+            let icon = NSImageView()
+            icon.image = NSImage(systemSymbolName: symbol, accessibilityDescription: nil)?
+                .withSymbolConfiguration(NSImage.SymbolConfiguration(pointSize: 30, weight: .regular))
+            icon.contentTintColor = .tertiaryLabelColor; icon.imageScaling = .scaleProportionallyDown
+            icon.setAccessibilityHidden(true); icon.cell?.setAccessibilityHidden(true)
+            icon.widthAnchor.constraint(equalToConstant: 44).isActive = true
+            icon.heightAnchor.constraint(equalToConstant: 54).isActive = true
+            emptyArtwork.addArrangedSubview(icon)
+        }
+        view.addArrangedSubview(emptyArtwork)
         view.addArrangedSubview(empty)
         empty.widthAnchor.constraint(equalTo: view.widthAnchor).isActive = true
     }
@@ -62,6 +76,7 @@ final class DeviceCards {
             if let change = card.update(reading, muted: settings.map { $0.isMuted(id) }) { changes.append(change) }
         }
         empty.isHidden = !orderedIDs.isEmpty || collectionMessage != nil
+        emptyArtwork.isHidden = empty.isHidden
         // Do not announce percentages, startup baselines or background polling.
         if active, collectionMessage != lastCollectionMessage {
             announce(collectionMessage ?? "Accessory information is available again.")
@@ -76,6 +91,7 @@ private final class DeviceCard: NSObject {
     private let image = NSImageView()
     private let percent = NSTextField(labelWithString: "")
     private let content = NSStackView()
+    private let battery = AccessoryBatteryLevelView()
     private let mute = NSButton(checkboxWithTitle: "Mute automatic alerts", target: nil, action: nil)
     private let muteHint = NSTextField(wrappingLabelWithString: "Temporary choice · may reset after reconnecting or quitting.")
     private let id: String
@@ -86,13 +102,14 @@ private final class DeviceCard: NSObject {
     init(_ reading: Reading, muted: Bool?, onMuteChange: @escaping (String, Bool) -> Void) {
         id = reading.id; self.onMuteChange = onMuteChange
         super.init()
-        view.boxType = .custom; view.cornerRadius = 12; view.borderWidth = 0
-        view.fillColor = .controlBackgroundColor; view.contentViewMargins = NSSize(width: 16, height: 12)
+        view.boxType = .custom; view.cornerRadius = 16; view.borderWidth = 1
+        view.borderColor = .separatorColor.withAlphaComponent(0.35)
+        view.fillColor = .controlBackgroundColor; view.contentViewMargins = NSSize(width: 18, height: 18)
         image.setAccessibilityHidden(true)
         image.cell?.setAccessibilityHidden(true)
         image.contentTintColor = .labelColor; image.imageScaling = .scaleProportionallyDown
-        image.widthAnchor.constraint(equalToConstant: 32).isActive = true
-        image.heightAnchor.constraint(equalToConstant: 30).isActive = true
+        image.widthAnchor.constraint(equalToConstant: 38).isActive = true
+        image.heightAnchor.constraint(equalToConstant: 38).isActive = true
         name.font = .preferredFont(forTextStyle: .headline)
         state.font = .preferredFont(forTextStyle: .body); state.textColor = .secondaryLabelColor
         let labels = NSStackView(views: [name, state])
@@ -100,15 +117,18 @@ private final class DeviceCard: NSObject {
         labels.setContentHuggingPriority(.defaultLow, for: .horizontal)
         name.widthAnchor.constraint(equalTo: labels.widthAnchor).isActive = true
         state.widthAnchor.constraint(equalTo: labels.widthAnchor).isActive = true
-        percent.font = .monospacedDigitSystemFont(ofSize: 24, weight: .regular); percent.alignment = .right
+        percent.font = .monospacedDigitSystemFont(ofSize: 30, weight: .medium); percent.alignment = .right
         percent.setContentHuggingPriority(.required, for: .horizontal)
         percent.setContentCompressionResistancePriority(.required, for: .horizontal)
         let row = NSStackView(views: [image, labels, percent])
-        row.spacing = 14; row.alignment = .centerY; row.translatesAutoresizingMaskIntoConstraints = false
+        row.spacing = 14; row.alignment = .centerY; row.distribution = .fill; row.translatesAutoresizingMaskIntoConstraints = false
         mute.font = .preferredFont(forTextStyle: .body); mute.target = self; mute.action = #selector(changeMute)
         muteHint.font = .preferredFont(forTextStyle: .body); muteHint.textColor = .secondaryLabelColor
         content.addArrangedSubview(row)
-        content.orientation = .vertical; content.alignment = .leading; content.spacing = 8; content.translatesAutoresizingMaskIntoConstraints = false
+        content.addArrangedSubview(battery)
+        battery.widthAnchor.constraint(equalTo: content.widthAnchor).isActive = true
+        battery.heightAnchor.constraint(equalToConstant: 5).isActive = true
+        content.orientation = .vertical; content.alignment = .leading; content.spacing = 12; content.translatesAutoresizingMaskIntoConstraints = false
         row.widthAnchor.constraint(equalTo: content.widthAnchor).isActive = true
         view.contentView!.addSubview(content)
         NSLayoutConstraint.activate([
@@ -144,17 +164,15 @@ private final class DeviceCard: NSObject {
                 .withSymbolConfiguration(NSImage.SymbolConfiguration(pointSize: 26, weight: .regular))
             lastSymbol = reading.symbol
         }
-        let status: String
-        switch reading.state {
-        case .charging: status = "Charging"
-        case .idle: status = "Not charging"
-        case .unknown: status = reading.fullChargeEvidence ? "100% reported · charging state unknown" : "Charging state unknown"
-        }
+        let presentation = AccessoryCardPresentation(reading)
+        let status = presentation.status
+        state.textColor = presentation.isCharging ? .systemGreen : .secondaryLabelColor
+        battery.update(fraction: presentation.fraction, isCharging: presentation.isCharging)
         let changedState = lastState != nil && lastState != status
         if state.stringValue != status { state.stringValue = status }; lastState = status
-        let percentage = reading.percent.map { "\($0)%" } ?? "—"
+        let percentage = presentation.percentage
         if percent.stringValue != percentage { percent.stringValue = percentage }
-        let description = reading.percent.map { "\($0) percent" } ?? "Battery level unknown"
+        let description = presentation.percentageDescription
         if percent.accessibilityLabel() != description { percent.setAccessibilityLabel(description) }
         return changedState ? "\(reading.name): \(status)." : nil
     }

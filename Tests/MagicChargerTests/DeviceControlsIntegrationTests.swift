@@ -144,14 +144,19 @@ final class DeviceControlsIntegrationTests: XCTestCase {
         let scroll = try XCTUnwrap(descendants(content).compactMap { $0 as? NSScrollView }.first)
         let document = try XCTUnwrap(scroll.documentView)
         XCTAssertGreaterThan(document.frame.height, scroll.contentSize.height)
-        for control in descendants(document).compactMap({ $0 as? NSControl }) where !control.isHiddenOrHasHiddenAncestor {
-            let frame = control.convert(control.bounds, to: document)
-            XCTAssertGreaterThanOrEqual(frame.minX, 0)
-            XCTAssertLessThanOrEqual(frame.maxX, document.bounds.width + 1, "\(control)")
-            if let field = control as? NSTextField, field.cell?.wraps == true {
-                XCTAssertLessThanOrEqual(field.cell!.cellSize(forBounds: field.bounds).height, field.bounds.height + 1, "\(field.stringValue)")
+        for section in ControlsSection.allCases {
+            controller.selectSection(section)
+            content.layoutSubtreeIfNeeded()
+            for control in descendants(document).compactMap({ $0 as? NSControl }) where !control.isHiddenOrHasHiddenAncestor {
+                let frame = control.convert(control.bounds, to: document)
+                XCTAssertGreaterThanOrEqual(frame.minX, 0)
+                XCTAssertLessThanOrEqual(frame.maxX, document.bounds.width + 1, "\(section): \(control)")
+                if let field = control as? NSTextField, field.cell?.wraps == true {
+                    XCTAssertLessThanOrEqual(field.cell!.cellSize(forBounds: field.bounds).height, field.bounds.height + 1, "\(field.stringValue)")
+                }
             }
         }
+        controller.selectSection(.accessories)
         let first = try mute("Magic Mouse 1", in: controller)
         var current: NSView? = first, visited = Set<ObjectIdentifier>(), muteOrder: [String] = []
         while let next = current, visited.insert(ObjectIdentifier(next)).inserted {

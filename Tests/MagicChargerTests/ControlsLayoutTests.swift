@@ -29,24 +29,31 @@ final class ControlsLayoutTests: XCTestCase {
         let scroll = try XCTUnwrap(descendants(content).compactMap { $0 as? NSScrollView }.first)
         let document = try XCTUnwrap(scroll.documentView)
         XCTAssertGreaterThan(document.frame.height, scroll.contentSize.height)
-        for control in descendants(document).compactMap({ $0 as? NSControl }) where !control.isHiddenOrHasHiddenAncestor {
-            let frame = control.convert(control.bounds, to: document)
-            XCTAssertGreaterThanOrEqual(frame.minX, 0, "\(control)")
-            XCTAssertLessThanOrEqual(frame.maxX, document.bounds.width + 1, "\(control)")
-            if let field = control as? NSTextField, field.cell?.wraps == true {
-                XCTAssertLessThanOrEqual(field.cell!.cellSize(forBounds: field.bounds).height, field.bounds.height + 1, "\(field.stringValue)")
+        for section in ControlsSection.allCases {
+            controller.selectSection(section)
+            content.layoutSubtreeIfNeeded()
+            XCTAssertEqual(window.contentLayoutRect.size, NSSize(width: 360, height: 400))
+            for control in descendants(document).compactMap({ $0 as? NSControl }) where !control.isHiddenOrHasHiddenAncestor {
+                let frame = control.convert(control.bounds, to: document)
+                XCTAssertGreaterThanOrEqual(frame.minX, 0, "\(section): \(control)")
+                XCTAssertLessThanOrEqual(frame.maxX, document.bounds.width + 1, "\(section): \(control)")
+                if let field = control as? NSTextField, field.cell?.wraps == true {
+                    XCTAssertLessThanOrEqual(field.cell!.cellSize(forBounds: field.bounds).height, field.bounds.height + 1, "\(field.stringValue)")
+                }
             }
+            let expected = section == .general ? ["Device icon", "Percentage", "Status emoji"]
+                : section == .notifications ? AlertKind.allCases.map(\.title) : []
+            guard let firstTitle = expected.first else { continue }
+            let first = try XCTUnwrap(descendants(document).compactMap { $0 as? NSButton }.first { $0.title == firstTitle })
+            var keyView: NSView? = first
+            var keyTitles: [String] = []
+            var visited = Set<ObjectIdentifier>()
+            while let current = keyView, visited.insert(ObjectIdentifier(current)).inserted {
+                if let button = current as? NSButton, !button.isHiddenOrHasHiddenAncestor { keyTitles.append(button.title) }
+                keyView = current.nextKeyView
+            }
+            XCTAssertEqual(Array(keyTitles.prefix(expected.count)), expected)
         }
-        let buttons = descendants(document).compactMap { $0 as? NSButton }
-        let first = try XCTUnwrap(buttons.first { $0.title == "Device icon" })
-        var keyView: NSView? = first
-        var keyTitles: [String] = []
-        var visited = Set<ObjectIdentifier>()
-        while let current = keyView, visited.insert(ObjectIdentifier(current)).inserted {
-            if let button = current as? NSButton, !button.isHiddenOrHasHiddenAncestor { keyTitles.append(button.title) }
-            keyView = current.nextKeyView
-        }
-        XCTAssertEqual(Array(keyTitles.prefix(7)), ["Device icon", "Percentage", "Status emoji"] + AlertKind.allCases.map(\.title))
         XCTAssertFalse(window.isVisible)
         window.close()
     }
