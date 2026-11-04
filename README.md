@@ -12,6 +12,8 @@ Optional local notifications tell you when charging starts and when a device rea
 
 Magic Charger reads relevant accessory battery information through IOKit. It shows charging devices in the menu bar in this order: device glyph, exact percentage, and status emoji (⚡️ while charging, 🔋 at 100%). When no supported device has verified charging evidence, the menu-bar items disappear; reopen the app from Finder or Spotlight for controls and Quit.
 
+The controls window separates Accessories, Notifications, and General into focused sections (Command-1, Command-2, and Command-3). A skippable first-launch welcome explains background monitoring and optional notifications; replay it with **General > Welcome Tour**. Existing installations keep their preferences and skip the automatic tour.
+
 The controls window lets you choose which menu-bar elements and alerts to show, check notification permission, and send one clearly labeled test notification without simulating charging. Closing the window keeps monitoring. There is no permanent Dock icon. **Launch at Login** is off by default and can be enabled in General.
 
 ## Features

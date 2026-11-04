@@ -51,8 +51,10 @@ final class ControlsWindow: NSWindowController, NSWindowDelegate {
     private var detailsWindow: NSWindow?
     private var hasUserResized = false
     private var adjustingLayout = false
+    private var onShowWelcome: (() -> Void)?
 
-    init(target: AnyObject, enable: Selector, test: Selector, updates: Selector, loginSettings: Selector, quit: Selector, preferences: MenuBarPreferences, alerts: NotificationPreferences, onChange: @escaping (MenuBarPreferences) -> Void, onAlertsChange: @escaping (NotificationPreferences) -> Void, onLoginChange: @escaping (Bool) -> Void, notificationSettingsReader: ((@escaping (NotificationReadiness) -> Void) -> Void)? = nil, onDeviceMuteChange: @escaping (String, Bool) -> Void = { _, _ in }) {
+    init(target: AnyObject, enable: Selector, test: Selector, updates: Selector, loginSettings: Selector, quit: Selector, preferences: MenuBarPreferences, alerts: NotificationPreferences, onChange: @escaping (MenuBarPreferences) -> Void, onAlertsChange: @escaping (NotificationPreferences) -> Void, onLoginChange: @escaping (Bool) -> Void, notificationSettingsReader: ((@escaping (NotificationReadiness) -> Void) -> Void)? = nil, onDeviceMuteChange: @escaping (String, Bool) -> Void = { _, _ in }, onShowWelcome: (() -> Void)? = nil) {
+        self.onShowWelcome = onShowWelcome
         devices = DeviceCards(onMuteChange: onDeviceMuteChange)
         onPreferencesChange = onChange
         notifications = NotificationControls(target: target, enable: enable, test: test, alerts: alerts, onAlertsChange: onAlertsChange, readSettings: notificationSettingsReader)
@@ -110,7 +112,11 @@ final class ControlsWindow: NSWindowController, NSWindowDelegate {
         toggles.orientation = .vertical; toggles.alignment = .leading; toggles.spacing = 10
         preferenceHint.font = .preferredFont(forTextStyle: .body); preferenceHint.textColor = .secondaryLabelColor; preferenceHint.isHidden = true
         let menuOptions = page([sectionTitle("Menu Bar"), secondaryText("Choose what appears for each charging accessory."), toggles, preferenceHint])
-        let generalPage = page([menuOptions, separator(), general.view, separator(), help.view])
+        let welcomeButton = NSButton(title: "Welcome Tour…", target: self, action: #selector(showWelcome))
+        welcomeButton.bezelStyle = .rounded
+        welcomeButton.isHidden = onShowWelcome == nil
+        welcomeButton.setAccessibilityHelp("Replay the introduction without changing your preferences.")
+        let generalPage = page([menuOptions, separator(), general.view, separator(), welcomeButton, help.view])
         generalPage.spacing = 20
         pages = [.accessories: accessoryPage, .notifications: page([notifications.view]), .general: generalPage]
         for section in ControlsSection.allCases {
@@ -185,6 +191,8 @@ final class ControlsWindow: NSWindowController, NSWindowDelegate {
         for view in views { view.widthAnchor.constraint(equalTo: page.widthAnchor).isActive = true }
         return page
     }
+
+    @objc private func showWelcome() { onShowWelcome?() }
 
     @objc private func changeSection() {
         guard let section = ControlsSection(rawValue: navigation.selectedSegment) else { return }

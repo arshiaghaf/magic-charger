@@ -136,7 +136,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         }, onAlertsChange: { [weak self] preferences in
             self?.updateAlertPreferences(preferences)
         }, onLoginChange: { [weak self] enabled in self?.changeLaunchAtLogin(enabled) },
-           onDeviceMuteChange: { [weak self] id, muted in self?.setDeviceMuted(muted, for: id) })
+           onDeviceMuteChange: { [weak self] id, muted in self?.setDeviceMuted(muted, for: id) },
+           onShowWelcome: { [weak self] in self?.showWelcome() })
         window = controls.window
     }
     @objc func viewReleases() {
