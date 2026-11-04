@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Magic Charger — Quiet Current alternative</title>
+<style>
+  :root { color-scheme: light dark; --paper: light-dark(#f5f6f7,#151719); --ink: light-dark(#20262a,#ecf0f2); --muted: light-dark(#657079,#9aa5ad); --line: light-dark(#dde2e6,#353b40); --surface: light-dark(white,#202429); }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font: 15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+  main { max-width: 1180px; padding: 60px 28px 70px; margin: auto; }
+  .eyebrow { color: #25818a; font-size: 11px; font-weight: 650; letter-spacing: .16em; text-transform: uppercase; }
+  h1 { font-size: clamp(32px,5vw,54px); letter-spacing: -.045em; line-height: 1.1; margin: 15px 0 20px; font-weight: 650; }
+  .intro { font-size: 19px; line-height: 1.5; color: var(--muted); max-width: 760px; }
+  .tags { display: flex; flex-wrap: wrap; gap: 10px; padding: 12px 0 30px; }
+  .tags span { border: 1px solid var(--line); border-radius: 30px; padding: 5px 12px; color: var(--muted); font-size: 12px; }
+  nav { display: flex; gap: 8px; margin: 10px 0 20px; flex-wrap: wrap; }
+  button { background: transparent; color: var(--muted); border: 1px solid var(--line); border-radius: 9px; padding: 10px 16px; font: inherit; cursor: pointer; }
+  button[aria-selected=true] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  button:focus-visible, a:focus-visible { outline: 3px solid #39a6c4; outline-offset: 4px; }
+  figure { margin: 0; }
+  img { width: 100%; display: block; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
+  figcaption { color: var(--muted); font-size: 12px; margin: 12px 0 30px; }
+  [hidden] { display: none !important; }
+  h2 { font-size: 23px; letter-spacing: -.025em; margin: 38px 0 10px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; }
+  .notes { margin-top: 24px; padding: 22px 24px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
+  .notes p { margin: 8px 0; color: var(--muted); }
+  a { color: inherit; text-underline-offset: 3px; }
+  code { font-size: 12px; overflow-wrap: anywhere; }
+  footer { margin-top: 35px; color: var(--muted); font-size: 12px; }
+  @media(max-width:700px) { main { padding: 35px 18px; } .grid { grid-template-columns: 1fr; } }
+</style>
+<main>
+  <div class="eyebrow">Magic Charger · alternative onboarding concept</div>
+  <h1>Quiet Current.</h1>
+  <p class="intro">A calm, guided introduction to a utility that stays out of the way. Three clear steps, saved alert choices, and an optional permission explained before macOS asks.</p>
+  <div class="tags"><span>Native macOS</span><span>Working app</span><span>Independent comparison branch</span><span>No added dependencies</span></div>
+  <nav role="tablist" aria-label="Onboarding screens">
+    <button role="tab" id="tab-welcome" aria-controls="welcome" aria-selected="true">1 · Welcome</button>
+    <button role="tab" id="tab-reminders" aria-controls="reminders" aria-selected="false" tabindex="-1">2 · Reminders</button>
+    <button role="tab" id="tab-ready" aria-controls="ready" aria-selected="false" tabindex="-1">3 · Ready</button>
+  </nav>
+  <section id="welcome" role="tabpanel" aria-labelledby="tab-welcome" tabindex="0">
+    <figure><a href="01-welcome-light.png"><img src="01-welcome-light.png" alt="Welcome step with a progress rail, keyboard and mouse illustration, and explanations of menu-bar behavior, reminders, and privacy."></a><figcaption>Welcome establishes what the app does and where it lives. All artwork is rendered by the native view.</figcaption></figure>
+  </section>
+  <section id="reminders" role="tabpanel" aria-labelledby="tab-reminders" tabindex="0" hidden>
+    <figure><a href="02-reminders-light.png"><img src="02-reminders-light.png" alt="Reminder step with four independent native switches and a separate optional Allow Notifications action."></a><figcaption>Alert choices save immediately. Permission is a separate explicit choice; Continue works without it.</figcaption></figure>
+  </section>
+  <section id="ready" role="tabpanel" aria-labelledby="tab-ready" tabindex="0" hidden>
+    <figure><a href="03-ready-light.png"><img src="03-ready-light.png" alt="Ready step explains accessory discovery, deferred notifications, reopening from Spotlight, and background monitoring."></a><figcaption>Completion is honest when permission is deferred and no accessory is present. Open Controls completes the walkthrough.</figcaption></figure>
+  </section>
+  <h2>Designed for the other states, too.</h2>
+  <div class="grid">
+    <figure><a href="04-reminders-dark.png"><img src="04-reminders-dark.png" alt="Dark appearance of the reminder step with an authorized notification state."></a><figcaption>Dark appearance · authorized fixture</figcaption></figure>
+    <figure><a href="05-permission-denied.png"><img src="05-permission-denied.png" alt="Blocked permission state with Notification Settings action and no forced retry."></a><figcaption>Blocked permission · explicit recovery through settings</figcaption></figure>
+  </div>
+  <details><summary>See the smaller window</summary><figure><a href="06-compact.png"><img src="06-compact.png" alt="A 720 by 520 point reminder window with scrollable content and fixed navigation."></a><figcaption>720 × 520 points · content scrolls, navigation stays fixed</figcaption></figure></details>
+  <div class="notes">
+    <strong>The design choice</strong>
+    <p>Choose this direction for a deliberate, reassuring first launch. The stable progress rail gives orientation; the permission card separates app preferences from macOS authorization. The tradeoff is a larger three-step setup. Everyday controls remain the existing native controls.</p>
+    <p><strong>Try it:</strong> from this checkout, run <code>sh scripts/run-onboarding-alternative.sh</code>. The separate local bundle uses its own preferences and permission identity. No installation is required.</p>
+    <p><strong>Evidence:</strong> native-view renders, nine onboarding regression tests, and an actual app walkthrough covering saved switches, optional permission, controls, replay, and Quit. <a href="README.md">Full validation and limitations</a>.</p>
+  </div>
+  <footer>These images render isolated test settings and an empty accessory list. Permission states are fixtures, not a record of permission changes or real notifications. No user telemetry appears in this comparison. This is an alternative concept, not a merged or selected direction.</footer>
+</main>
+<script>
+  const tabs = [...document.querySelectorAll('[role=tab]')];
+  function select(tab, focus = false) {
+    tabs.forEach(item => {
+      const active = item === tab;
+      item.setAttribute('aria-selected', String(active));
+      item.tabIndex = active ? 0 : -1;
+      document.getElementById(item.getAttribute('aria-controls')).hidden = !active;
+    });
+    if (focus) tab.focus();
+  }
+  tabs.forEach((tab, index) => {
+    tab.addEventListener('click', () => select(tab));
+    tab.addEventListener('keydown', event => {
+      let next;
+      if (event.key === 'ArrowRight') next = (index + 1) % tabs.length;
+      if (event.key === 'ArrowLeft') next = (index - 1 + tabs.length) % tabs.length;
+      if (event.key === 'Home') next = 0;
+      if (event.key === 'End') next = tabs.length - 1;
+      if (next !== undefined) { event.preventDefault(); select(tabs[next], true); }
+    });
+  });
+</script>
+</html>
