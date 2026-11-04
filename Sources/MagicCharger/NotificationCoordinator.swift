@@ -41,6 +41,8 @@ extension AppDelegate {
     func updateAlertPreferences(_ preferences: NotificationPreferences) {
         let disabled = AlertKind.allCases.filter { !preferences.allows($0) }
         alertSettings.update(preferences); preferences.save(.standard)
+        controls?.synchronizeAlertPreferences(preferences)
+        onboarding?.model.synchronizePreferences(preferences)
         center.getPendingNotificationRequests { requests in
             let identifiers = requests.filter { request in
                 disabled.contains { kind in

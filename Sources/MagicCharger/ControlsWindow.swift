@@ -23,7 +23,7 @@ final class ControlsWindow: NSWindowController, NSWindowDelegate {
     private var hasUserResized = false
     private var adjustingLayout = false
 
-    init(target: AnyObject, enable: Selector, test: Selector, updates: Selector, loginSettings: Selector, quit: Selector, preferences: MenuBarPreferences, alerts: NotificationPreferences, onChange: @escaping (MenuBarPreferences) -> Void, onAlertsChange: @escaping (NotificationPreferences) -> Void, onLoginChange: @escaping (Bool) -> Void, notificationSettingsReader: ((@escaping (NotificationReadiness) -> Void) -> Void)? = nil, onDeviceMuteChange: @escaping (String, Bool) -> Void = { _, _ in }) {
+    init(target: AnyObject, enable: Selector, test: Selector, updates: Selector, loginSettings: Selector, quit: Selector, preferences: MenuBarPreferences, alerts: NotificationPreferences, onChange: @escaping (MenuBarPreferences) -> Void, onAlertsChange: @escaping (NotificationPreferences) -> Void, onLoginChange: @escaping (Bool) -> Void, notificationSettingsReader: ((@escaping (NotificationReadiness) -> Void) -> Void)? = nil, onDeviceMuteChange: @escaping (String, Bool) -> Void = { _, _ in }, setup: Selector? = nil) {
         devices = DeviceCards(onMuteChange: onDeviceMuteChange)
         onPreferencesChange = onChange
         notifications = NotificationControls(target: target, enable: enable, test: test, alerts: alerts, onAlertsChange: onAlertsChange, readSettings: notificationSettingsReader)
@@ -59,6 +59,11 @@ final class ControlsWindow: NSWindowController, NSWindowDelegate {
         let quitButton = NSButton(title: "Quit Magic Charger", target: target, action: quit); quitButton.keyEquivalent = "q"; quitButton.keyEquivalentModifierMask = .command
         let about = NSButton(title: "About", target: self, action: #selector(showAbout)); about.bezelStyle = .inline
         let footer = NSStackView(views: [details, about, quitButton]); footer.orientation = .vertical; footer.alignment = .leading; footer.spacing = 10
+        if let setup = setup {
+            let setupButton = NSButton(title: "Show Setup…", target: target, action: setup)
+            setupButton.bezelStyle = .inline
+            footer.insertArrangedSubview(setupButton, at: 0)
+        }
         for view in [heading, devices.view, menuOptions, notifications.view, general.view, footer] { stack.addArrangedSubview(view); view.widthAnchor.constraint(equalTo: stack.widthAnchor).isActive = true }
         stack.insertArrangedSubview(help.view, at: stack.arrangedSubviews.count - 1)
         help.view.widthAnchor.constraint(equalTo: stack.widthAnchor).isActive = true
@@ -92,6 +97,10 @@ final class ControlsWindow: NSWindowController, NSWindowDelegate {
     func updateLogin(status: SMAppService.Status, feedback: String = "") {
         general.updateLogin(status: status, feedback: feedback)
         resizeForContent()
+    }
+
+    func synchronizeAlertPreferences(_ preferences: NotificationPreferences) {
+        notifications.synchronizePreferences(preferences)
     }
 
     func updateFeedbackForUpdates(_ message: String) {

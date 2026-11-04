@@ -138,6 +138,10 @@ final class NotificationControls: NSObject {
         onLayoutChange?()
     }
 
+    func synchronizePreferences(_ preferences: NotificationPreferences) {
+        for kind in AlertKind.allCases { alertToggles[kind]?.state = preferences.allows(kind) ? .on : .off }
+    }
+
     @objc private func changeAlerts() {
         onAlertsChange(NotificationPreferences(started: alertToggles[.started]?.state == .on,
             soon: alertToggles[.soon]?.state == .on, target: alertToggles[.target]?.state == .on,

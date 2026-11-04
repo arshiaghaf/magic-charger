@@ -13,6 +13,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     var deviceSettings = DeviceSettings(defaults: .standard)
     var window: NSWindow!
     var controls: ControlsWindow!
+    var onboarding: OnboardingWindow?
     var timer: Timer?
     var lifecycle = AlertLifecycle()
     var engine: Thresholds { get { lifecycle.thresholds } set { lifecycle.thresholds = newValue } }
@@ -63,6 +64,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     func applicationDidBecomeActive(_ notification: Notification) {
         guard controls != nil else { return }
         controls.updateLogin(status: SMAppService.mainApp.status)
+        onboarding?.model.refreshSettings()
         updateNotificationStatus()
     }
     func schedulePolling(_ interval: TimeInterval) {
@@ -91,6 +93,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         diagnostic += "\n" + starts.lastDecisions.joined(separator: "\n")
         diagnostic += "\n\n" + notificationDetails + "\n" + foregroundPresentation
         controls.update(readings: readings, notificationStatus: notificationStatus, feedback: notificationFeedback, diagnostic: diagnostic, deviceSettings: deviceSettings, collectionMessage: collectionMessage)
+        onboarding?.model.updateAccessories(readings, message: collectionMessage)
         for r in readings {
             menuBar.present(r, preferences: displayPreferences, target: self)
         }
@@ -127,7 +130,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         }, onAlertsChange: { [weak self] preferences in
             self?.updateAlertPreferences(preferences)
         }, onLoginChange: { [weak self] enabled in self?.changeLaunchAtLogin(enabled) },
-           onDeviceMuteChange: { [weak self] id, muted in self?.setDeviceMuted(muted, for: id) })
+           onDeviceMuteChange: { [weak self] id, muted in self?.setDeviceMuted(muted, for: id) }, setup: #selector(showOnboarding))
         window = controls.window
     }
     @objc func viewReleases() {
@@ -135,10 +138,39 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         controls.updateFeedbackForUpdates(NSWorkspace.shared.open(releases) ? "" : "Couldn’t open the releases page. Try again from your browser.")
     }
     @objc func showSettings() {
+        if !UserDefaults.standard.bool(forKey: OnboardingModel.completionKey) {
+            showOnboarding()
+        } else {
+            showControls()
+        }
+    }
+    func showControls() {
         window.makeKeyAndOrderFront(nil)
         controls.updateLogin(status: SMAppService.mainApp.status)
         updateNotificationStatus()
         NSApp.activate(ignoringOtherApps: true)
+    }
+    @objc func showOnboarding() {
+        if onboarding == nil {
+            let model = OnboardingModel(defaults: .standard, preferences: alertPreferences,
+                readSettings: { [weak self] completion in self?.readNotificationReadiness(completion) },
+                requestPermission: { [weak self] completion in
+                    self?.center.requestAuthorization(options: [.alert, .sound]) { _, error in
+                        completion(error == nil ? nil : "macOS couldn’t complete the request. Try again or use Notification Settings.")
+                        DispatchQueue.main.async { self?.updateNotificationStatus() }
+                    }
+                }, openSettings: { [weak self] in self?.permissions() },
+                savePreferences: { [weak self] preferences in
+                    self?.updateAlertPreferences(preferences)
+                }, finish: { [weak self] in
+                    self?.onboarding?.close()
+                    self?.showControls()
+                })
+            onboarding = OnboardingWindow(model: model, quit: { [weak self] in self?.quit() })
+        }
+        onboarding?.model.synchronizePreferences(alertPreferences)
+        if onboarding?.model.isComplete == true { onboarding?.model.restartWalkthrough() }
+        onboarding?.present()
     }
     @objc func quit() { NSApp.terminate(nil) }
 }
