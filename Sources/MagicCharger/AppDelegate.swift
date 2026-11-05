@@ -13,6 +13,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     var deviceSettings = DeviceSettings(defaults: .standard)
     var window: NSWindow!
     var controls: ControlsWindow!
+    var onboarding: OnboardingWindow?
+    var onboardingState: OnboardingState!
     var timer: Timer?
     var lifecycle = AlertLifecycle()
     var engine: Thresholds { get { lifecycle.thresholds } set { lifecycle.thresholds = newValue } }
@@ -48,22 +50,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         NSApp.setActivationPolicy(.accessory)
         center.delegate = self
         let defaults = UserDefaults.standard
+        onboardingState = OnboardingState(defaults: defaults, hasExistingInstallation: defaults.data(forKey: "identityKey.v1")?.count == 32)
         if let key = defaults.data(forKey: "identityKey.v1"), key.count == 32 { identityKey = key }
         else { identityKey = SymmetricKey(size: .bits256).withUnsafeBytes { Data($0) }; defaults.set(identityKey, forKey: "identityKey.v1") }
         updateNotificationStatus()
         engine = sessionStore.load()
         makeWindow(); accessoryMonitor.onChange = { [weak self] in self?.refresh() }; refresh()
-        if !launchedAtLogin { showSettings() }
+        if onboardingState.shouldPresentAutomatically(launchedAtLogin: launchedAtLogin) { showWelcome() }
+        else if !launchedAtLogin { showSettings() }
         schedulePolling(30)
         let nc = NSWorkspace.shared.notificationCenter
         observations.append(nc.addObserver(forName: NSWorkspace.willSleepNotification, object: nil, queue: .main) { [weak self] _ in self?.lifecycle.suspend(); self?.collectionScheduler.suspend(); self?.menuBar.clear() })
         observations.append(nc.addObserver(forName: NSWorkspace.didWakeNotification, object: nil, queue: .main) { [weak self] _ in self?.lifecycle.resume(); self?.collectionScheduler.resume() })
     }
-    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool { showSettings(); return true }
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        if onboardingState?.isComplete == false { showWelcome() } else { showSettings() }
+        return true
+    }
     func applicationDidBecomeActive(_ notification: Notification) {
         guard controls != nil else { return }
         controls.updateLogin(status: SMAppService.mainApp.status)
         updateNotificationStatus()
+        onboarding?.refreshNotificationReadiness()
     }
     func schedulePolling(_ interval: TimeInterval) {
         if timer != nil && pollInterval == interval { return }
@@ -91,6 +99,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         diagnostic += "\n" + starts.lastDecisions.joined(separator: "\n")
         diagnostic += "\n\n" + notificationDetails + "\n" + foregroundPresentation
         controls.update(readings: readings, notificationStatus: notificationStatus, feedback: notificationFeedback, diagnostic: diagnostic, deviceSettings: deviceSettings, collectionMessage: collectionMessage)
+        onboarding?.updateNotificationStatus(notificationStatus)
         for r in readings {
             menuBar.present(r, preferences: displayPreferences, target: self)
         }
@@ -127,14 +136,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         }, onAlertsChange: { [weak self] preferences in
             self?.updateAlertPreferences(preferences)
         }, onLoginChange: { [weak self] enabled in self?.changeLaunchAtLogin(enabled) },
-           onDeviceMuteChange: { [weak self] id, muted in self?.setDeviceMuted(muted, for: id) })
+           onDeviceMuteChange: { [weak self] id, muted in self?.setDeviceMuted(muted, for: id) },
+           onShowWelcome: { [weak self] in self?.showWelcome() })
         window = controls.window
     }
     @objc func viewReleases() {
         let releases = URL(string: "https://github.com/arshiaghaf/magic-charger/releases")!
         controls.updateFeedbackForUpdates(NSWorkspace.shared.open(releases) ? "" : "Couldn’t open the releases page. Try again from your browser.")
     }
+    @objc func showWelcome() {
+        if onboarding == nil {
+            onboarding = OnboardingWindow(readSettings: { [weak self] completion in
+                self?.readNotificationReadiness(completion)
+            }, requestNotifications: { [weak self] in self?.permissions() }, onFinish: { [weak self] in
+                self?.onboardingState.finish()
+                self?.showSettings()
+            })
+        }
+        window.orderOut(nil)
+        if onboarding?.window?.isVisible == true {
+            onboarding?.window?.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+        } else { onboarding?.present() }
+    }
     @objc func showSettings() {
+        onboarding?.window?.orderOut(nil)
         window.makeKeyAndOrderFront(nil)
         controls.updateLogin(status: SMAppService.mainApp.status)
         updateNotificationStatus()

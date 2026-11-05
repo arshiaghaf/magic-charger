@@ -42,7 +42,7 @@ final class ControlsWindowTests: XCTestCase {
         controller.update(readings: [], notificationStatus: "Notifications enabled.", feedback: "", diagnostic: "SIMULATED")
         let window = try XCTUnwrap(controller.window)
         window.contentView?.layoutSubtreeIfNeeded()
-        XCTAssertEqual(window.contentLayoutRect.width, 500)
+        XCTAssertEqual(window.contentLayoutRect.width, 580)
         XCTAssertTrue(window.styleMask.contains(.resizable))
         XCTAssertEqual(window.contentMinSize.width, 360)
         XCTAssertFalse(window.isVisible)
@@ -62,7 +62,7 @@ final class ControlsWindowTests: XCTestCase {
         let window = try XCTUnwrap(controller.window)
         window.contentView?.layoutSubtreeIfNeeded()
         func findBox(_ view: NSView) -> NSBox? {
-            if let box = view as? NSBox { return box }
+            if let box = view as? NSBox, box.boxType == .custom { return box }
             return view.subviews.lazy.compactMap(findBox).first
         }
         let box = try XCTUnwrap(findBox(try XCTUnwrap(window.contentView)))
