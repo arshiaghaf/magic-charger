@@ -110,7 +110,7 @@ final class OnboardingWindow: NSWindowController, NSWindowDelegate {
             body.topAnchor.constraint(equalTo: pages.topAnchor)
         ])
         backButton.isHidden = next == .welcome
-        stepLabel.stringValue = next == .welcome ? "1 of 2 · A quick introduction" : "2 of 2 · Optional notifications"
+        stepLabel.stringValue = next == .welcome ? "1 of 2 · Overview" : "2 of 2 · Optional notifications"
         primaryButton.title = next == .welcome ? "Continue" : "Open Magic Charger"
         secondaryButton.title = next == .welcome ? "Set Up Later" : "Not Now"
         layoutPage(resetScroll: true)
@@ -135,15 +135,15 @@ final class OnboardingWindow: NSWindowController, NSWindowDelegate {
         icon.imageScaling = .scaleProportionallyUpOrDown
         icon.setAccessibilityElement(false)
         NSLayoutConstraint.activate([icon.widthAnchor.constraint(equalToConstant: 76), icon.heightAnchor.constraint(equalToConstant: 76)])
-        let heading = title("A little help.\nRight on time.")
+        let heading = title("Welcome to\nMagic Charger")
         let introduction = text("Charging reminders for your Magic Keyboard and Magic Mouse.", size: 15)
         introduction.alignment = .center
         let hero = NSStackView(views: [icon, heading, introduction])
         hero.orientation = .vertical; hero.alignment = .centerX; hero.spacing = 10
         let features = NSStackView(views: [
-            feature(symbol: "menubar.rectangle", title: "There when you’re charging", detail: "A menu-bar item appears only with verified charging evidence. Otherwise, it disappears."),
-            feature(symbol: "app.badge", title: "Easy to find again", detail: "Reopen Magic Charger from Finder or Spotlight for controls and Quit. Closing the window keeps monitoring."),
-            feature(symbol: "lock.shield", title: "Private by design", detail: "Accessory battery information stays on your Mac. No account, analytics, or input capture.")
+            feature(symbol: "menubar.rectangle", title: "Charging in the menu bar", detail: "A menu-bar item appears only with verified charging evidence. Otherwise, it disappears."),
+            feature(symbol: "app.badge", title: "Reopen controls", detail: "Reopen Magic Charger from Finder or Spotlight for controls and Quit. Closing the window keeps monitoring."),
+            feature(symbol: "lock.shield", title: "On-device privacy", detail: "Accessory battery information stays on your Mac. No account, analytics, or input capture.")
         ])
         features.orientation = .vertical; features.alignment = .leading; features.spacing = 19
         for row in features.arrangedSubviews { row.widthAnchor.constraint(equalTo: features.widthAnchor).isActive = true }
@@ -160,13 +160,13 @@ final class OnboardingWindow: NSWindowController, NSWindowDelegate {
         bell.symbolConfiguration = NSImage.SymbolConfiguration(pointSize: 44, weight: .regular)
         bell.setAccessibilityElement(false)
         bell.heightAnchor.constraint(equalToConstant: 64).isActive = true
-        let heading = title("A timely nudge.")
-        let introduction = text("Choose whether Magic Charger can send you charging reminders. You’re always in control.", size: 15)
+        let heading = title("Charging notifications")
+        let introduction = text("Enable notifications to receive charging reminders.", size: 15)
         introduction.alignment = .center
         let hero = NSStackView(views: [bell, heading, introduction])
         hero.orientation = .vertical; hero.alignment = .centerX; hero.spacing = 12
         introduction.widthAnchor.constraint(equalTo: hero.widthAnchor).isActive = true
-        let reminders = feature(symbol: "battery.75percent", title: "Reminders at 78% and 80%", detail: "You can also choose charging-start and fully-charged alerts in controls. Magic Charger cannot stop charging.")
+        let reminders = feature(symbol: "battery.75percent", title: "Reminders at 78% and 80%", detail: "Choose charging-start and fully-charged alerts in Notifications. Magic Charger cannot stop charging.")
         permissionButton.title = "Enable Notifications…"
         permissionButton.bezelStyle = .rounded
         permissionButton.controlSize = .large
